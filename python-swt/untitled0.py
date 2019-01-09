@@ -435,8 +435,23 @@ try:
     final_mask = SWTScrubber.scrub(file_url)
     # final_mask = cv2.GaussianBlur(final_mask, (1, 3), 0)
     # cv2.GaussianBlur(sobelx64f, (3, 3), 0)
+    #final_mask = np.rint(final_mask)
     final_image = final_mask*255
-    cv2.imwrite('final.jpg', final_mask * 255)
+    
+    for row in range(len(final_image)):
+        for col in range(len(final_image[0])):
+            if row==0 or col==0 or row==len(final_image)-1 or col==len(final_image[0])-1:
+                continue
+            
+            btm = final_image[row+1][col]
+            top = final_image[row-1][col]
+            lft = final_image[row][col+1]
+            right = final_image[row][col-1]
+            
+            if btm==top and lft==right and lft==top:
+                final_image[row][col] = btm
+    
+    cv2.imwrite('final.jpg', final_image)
     print("final time" + str(time.clock() - t0))
     
     for position in remove_shirorekha:
