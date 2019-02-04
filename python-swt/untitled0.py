@@ -38,20 +38,20 @@ class SWTScrubber(object):
 
     @classmethod
     def _create_derivative(cls, filepath):
-        img = cv2.imread(filepath,0)
-        
+        img = cv2.imread(filepath, 0)
+
         edges = cv2.Canny(img, 175, 320, apertureSize=3)
         # Create gradient map using Sobel
-        sobelx64f = cv2.Sobel(img,cv2.CV_64F,1,0,ksize=-1)
-        sobely64f = cv2.Sobel(img,cv2.CV_64F,0,1,ksize=-1)
+        sobelx64f = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=-1)
+        sobely64f = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=-1)
 
         theta = np.arctan2(sobely64f, sobelx64f)
         if diagnostics:
-            cv2.imwrite('edges.jpg',edges)
+            cv2.imwrite('edges.jpg', edges)
             cv2.imwrite('sobelx64f.jpg', np.absolute(sobelx64f))
             cv2.imwrite('sobely64f.jpg', np.absolute(sobely64f))
             # amplify theta for visual inspection
-            theta_visible = (theta + np.pi)*255/(2*np.pi)
+            theta_visible = (theta + np.pi) * 255 / (2 * np.pi)
             cv2.imwrite('theta.jpg', theta_visible)
         return (edges, sobelx64f, sobely64f, theta)
 
@@ -62,20 +62,20 @@ class SWTScrubber(object):
         swt[:] = np.Infinity
         rays = []
 
-        print("swt clock"+str(time.clock() - t0))
+        print("swt clock" + str(time.clock() - t0))
 
         # now iterate over pixels in image, checking Canny to see if we're on an edge.
         # if we are, follow a normal a ray to either the next edge or image border
         # edgesSparse = scipy.sparse.coo_matrix(edges)
         step_x_g = -1 * sobelx64f
         step_y_g = -1 * sobely64f
-        mag_g = np.sqrt( step_x_g * step_x_g + step_y_g * step_y_g )
+        mag_g = np.sqrt(step_x_g * step_x_g + step_y_g * step_y_g)
         grad_x_g = step_x_g / mag_g
         grad_y_g = step_y_g / mag_g
-        
+
         for x in range(edges.shape[1]):
             for y in range(edges.shape[0]):
-                
+
                 if edges[y, x] > 0:
                     step_x = step_x_g[y, x]
                     step_y = step_y_g[y, x]
@@ -100,11 +100,14 @@ class SWTScrubber(object):
                                     ray.append((cur_x, cur_y))
                                     theta_point = theta[y, x]
                                     alpha = theta[cur_y, cur_x]
-                                    
-                                    #print("some math"+str(math.acos(grad_x * -grad_x_g[cur_y, cur_x] + grad_y * -grad_y_g[cur_y, cur_x])))
-                                    if grad_x * -grad_x_g[cur_y, cur_x] + grad_y * -grad_y_g[cur_y, cur_x] >= -1 and grad_x * -grad_x_g[cur_y, cur_x] + grad_y * -grad_y_g[cur_y, cur_x] <=1:
-                                        if math.acos(grad_x * -grad_x_g[cur_y, cur_x] + grad_y * -grad_y_g[cur_y, cur_x]) < np.pi/2.0:
-                                            thickness = math.sqrt( (cur_x - x) * (cur_x - x) + (cur_y - y) * (cur_y - y) )
+
+                                    # print("some math"+str(math.acos(grad_x * -grad_x_g[cur_y, cur_x] + grad_y * -grad_y_g[cur_y, cur_x])))
+                                    if grad_x * -grad_x_g[cur_y, cur_x] + grad_y * -grad_y_g[
+                                        cur_y, cur_x] >= -1 and grad_x * -grad_x_g[cur_y, cur_x] + grad_y * -grad_y_g[
+                                        cur_y, cur_x] <= 1:
+                                        if math.acos(grad_x * -grad_x_g[cur_y, cur_x] + grad_y * -grad_y_g[
+                                            cur_y, cur_x]) < np.pi / 2.0:
+                                            thickness = math.sqrt((cur_x - x) * (cur_x - x) + (cur_y - y) * (cur_y - y))
                                             for (rp_x, rp_y) in ray:
                                                 swt[rp_y, rp_x] = min(thickness, swt[rp_y, rp_x])
                                             rays.append(ray)
@@ -136,11 +139,13 @@ class SWTScrubber(object):
                 self.value = value
                 self.parent = self
                 self.rank = 0
+
             def __eq__(self, other):
                 if type(other) is type(self):
                     return self.value == other.value
                 else:
                     return False
+
             def __ne__(self, other):
                 return not self.__eq__(other)
 
@@ -196,10 +201,10 @@ class SWTScrubber(object):
             for x in range(swt.shape[1]):
                 sw_point = swt[y, x]
                 if sw_point < np.Infinity and sw_point > 0:
-                    neighbors = [(y, x-1),   # west
-                                 (y-1, x-1), # northwest
-                                 (y-1, x),   # north
-                                 (y-1, x+1)] # northeast
+                    neighbors = [(y, x - 1),  # west
+                                 (y - 1, x - 1),  # northwest
+                                 (y - 1, x),  # north
+                                 (y - 1, x + 1)]  # northeast
                     connected_neighbors = None
                     neighborvals = []
 
@@ -257,7 +262,7 @@ class SWTScrubber(object):
         topleft_pts = []
         images = []
 
-        for label,layer in shapes.items():
+        for label, layer in shapes.items():
             (nz_y, nz_x) = np.nonzero(layer)
             east, west, south, north = max(nz_x), min(nz_x), max(nz_y), min(nz_y)
             width, height = east - west, south - north
@@ -278,7 +283,7 @@ class SWTScrubber(object):
 
             if diagnostics:
                 print(" written to image.")
-                cv2.imwrite('layer'+ str(label) +'.jpg', layer * 255)
+                cv2.imwrite('layer' + str(label) + '.jpg', layer * 255)
 
             # we use log_base_2 so we can do linear distance comparison later using k-d tree
             # ie, if log2(x) - log2(y) > 1, we know that x > 2*y
@@ -294,9 +299,9 @@ class SWTScrubber(object):
     @classmethod
     def _find_words(cls, swts, heights, widths, topleft_pts, images):
         # Find all shape pairs that have similar median stroke widths
-        print ('SWTS')
-        print (swts)
-        print ('DONESWTS')
+        print('SWTS')
+        print(swts)
+        print('DONESWTS')
         swt_tree = scipy.spatial.KDTree(np.asarray(swts))
         stp = swt_tree.query_pairs(1)
 
@@ -325,7 +330,7 @@ class SWTScrubber(object):
                 pair_angles.append(np.asarray([angle]))
 
         angle_tree = scipy.spatial.KDTree(np.asarray(pair_angles))
-        atp = angle_tree.query_pairs(np.pi/12)
+        atp = angle_tree.query_pairs(np.pi / 12)
 
         for pair_idx in atp:
             pair_a = pairs[pair_idx[0]]
@@ -371,99 +376,106 @@ image_links = []
 image_links.append('https://qph.fs.quoracdn.net/main-qimg-80262fff20c2821fa50d56f4d2a7140a.webp')
 image_links.append('https://3.imimg.com/data3/ED/WS/MY-9295214/exit-sign-500x500.jpg')
 image_links.append('https://funwithlol.files.wordpress.com/2015/04/120.jpg')
-#local test file to run this comment out line 376-382 and on 384 line change local_filename to file_url
+# local test file to run this comment out line 376-382 and on 384 line change local_filename to file_url
 
-im_gray = cv2.imread('test.jpg', cv2.IMREAD_GRAYSCALE)
+im_gray = cv2.imread('../results/1.jpg', cv2.IMREAD_GRAYSCALE)
 (thresh, im_bw) = cv2.threshold(im_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-#cv2.imwrite('bw_image.png', im_bw)
+# cv2.imwrite('bw_image.png', im_bw)
 
-#im_bw = im_bw / 255.0
-#im_bw = im_bw.astype(np.uint8)
+# im_bw = im_bw / 255.0
+# im_bw = im_bw.astype(np.uint8)
 
 print(len(im_bw))
 
-
-#Set threshold
-threshold_lower = len(im_bw[0])//25
+# Set threshold
+threshold_lower = len(im_bw[0]) // 25
 print(threshold_lower)
-threshold_upper = len(im_bw[0])//7
+threshold_upper = len(im_bw[0]) // 7
 print(threshold_upper)
 
 remove_shirorekha = []
 
-#black text on white ie black on white
+# black text on white ie black on white
 for row in range(len(im_bw)):
     shirorekha_pos = 0
     for col in range(len(im_bw[row])):
         if int(im_bw[row][col]) == 0:
-            shirorekha_pos = shirorekha_pos + 1 
+            shirorekha_pos = shirorekha_pos + 1
         elif int(im_bw[row][col]) == 255:
             if shirorekha_pos > threshold_lower and shirorekha_pos < threshold_upper:
-                remove_shirorekha.append([row,col,shirorekha_pos])
+                remove_shirorekha.append([row, col, shirorekha_pos])
             shirorekha_pos = 0
-            
-    if shirorekha_pos > threshold_lower and shirorekha_pos < threshold_upper:
-                remove_shirorekha.append([row,len(im_bw[row])-1,shirorekha_pos])
-            
 
-#remove sirorekha for black text on white ie black on white
+    if shirorekha_pos > threshold_lower and shirorekha_pos < threshold_upper:
+        remove_shirorekha.append([row, len(im_bw[row]) - 1, shirorekha_pos])
+
+# remove sirorekha for black text on white ie black on white
 for position in remove_shirorekha:
     row = position[0]
     col = position[1]
     shirorekha_pos = position[2]
-    
+
     for _ in range(shirorekha_pos):
         im_bw[row][col] = 255.
         col = col - 1
-        
 
 cv2.imwrite('bw_shirorekha_removed.jpg', im_bw)
 
 image_links.append('bw_shirorekha_removed.jpg')
 file_url = image_links[3]
-#local_filename = hashlib.sha224(file_url.encode('utf-8')).hexdigest()
+# local_filename = hashlib.sha224(file_url.encode('utf-8')).hexdigest()
 
 try:
-    #s3_response = urlopen(file_url)
-    #with open(local_filename, 'wb+') as destination:
-     #   while True:
-            # read file in 4kB chunks
-      #      chunk = s3_response.read(4096)
-       #     if not chunk: break
-        #    destination.write(chunk)
-    #final_mask = SWTScrubber.scrub('wallstreetsmd.jpeg')
+    # s3_response = urlopen(file_url)
+    # with open(local_filename, 'wb+') as destination:
+    #   while True:
+    # read file in 4kB chunks
+    #      chunk = s3_response.read(4096)
+    #     if not chunk: break
+    #    destination.write(chunk)
+    # final_mask = SWTScrubber.scrub('wallstreetsmd.jpeg')
     final_mask = SWTScrubber.scrub(file_url)
     # final_mask = cv2.GaussianBlur(final_mask, (1, 3), 0)
     # cv2.GaussianBlur(sobelx64f, (3, 3), 0)
-    #final_mask = np.rint(final_mask)
-    final_image = final_mask*255
-    
+    # final_mask = np.rint(final_mask)
+    final_image = final_mask * 255
+    cv2.imwrite('swt_originl.jpg',final_image)
     for row in range(len(final_image)):
         for col in range(len(final_image[0])):
-            if row==0 or col==0 or row==len(final_image)-1 or col==len(final_image[0])-1:
+            if row == 0 or col == 0 or row == len(final_image) - 1 or col == len(final_image[0]) - 1:
                 continue
-            
-            btm = final_image[row+1][col]
-            top = final_image[row-1][col]
-            lft = final_image[row][col+1]
-            right = final_image[row][col-1]
-            
-            if btm==top and lft==right and lft==top:
+
+            btm = final_image[row + 1][col]
+            top = final_image[row - 1][col]
+            lft = final_image[row][col + 1]
+            right = final_image[row][col - 1]
+
+            if btm == top and lft == right and lft == top:
                 final_image[row][col] = btm
-    
+
     cv2.imwrite('final.jpg', final_image)
     print("final time" + str(time.clock() - t0))
-    
+
     for position in remove_shirorekha:
         row = position[0]
         col = position[1]
         shirorekha_pos = position[2]
-    
+
         for _ in range(shirorekha_pos):
             final_image[row][col] = 255.
             col = col - 1
-        
+
     cv2.imwrite('final2.jpg', final_image)
-finally: 
+    for row in range(len(final_image)):
+        for col in range(len(final_image[0])):
+            if int(final_image[row][col]) == 0:
+                final_image[row][col] = 255.
+            else:
+                final_image[row][col] = 0
+
+    cv2.imwrite('final3.jpg', final_image)
+
+
+finally:
     print("done")
-    #s3_response.close()
+# s3_response.close()
